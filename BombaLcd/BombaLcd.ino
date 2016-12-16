@@ -23,10 +23,13 @@ const int DOWN           = 3;
 const int LEFT           = 4;
 const int RIGHT          = 1;
 
-const int BOUNCE = 60;
+const int BOUNCE = 200;
 
 //Armed variable
 boolean armed = false;
+
+//IMPORTANT: Disarm code
+const int code[] = {1,2,3,4};
 
 void setup() 
 {
@@ -52,7 +55,8 @@ void loop()
   lcd.clear();
   
   if (getKey(analogRead(0)) == SELECT) {
-    armed = !armed;}
+    if(inputCode()) {
+      armed = !armed;}}
     
   lcd.setCursor(0,0);
   if (armed)
@@ -61,16 +65,14 @@ void loop()
   {lcd.print("Bomb disarmed");}
   
   lcd.setCursor(0,1);
+  lcd.print("Time: ");
   lcd.print(minutes);
   lcd.print(":");
   if (seconds < 10) {
     lcd.print("0");}
   lcd.print(seconds);
   
-  seconds--; //Baja un segundo
-  if (seconds < 0) {minutes--;seconds = 59;}
-  
-  delay(1000); //Espera un segundo
+  updateTime();
 
   //Counter reaches 0:00
   if(minutes == 0 && seconds <= 0){
@@ -88,6 +90,12 @@ void loop()
      }
   }
 }
+
+void updateTime() {
+    seconds--; //Updates time
+    if (seconds < 0) {minutes--;seconds = 59;}
+    delay(1000); //Wais 1 seconds
+  }
 
  /**
  * Gets the key 
@@ -110,44 +118,36 @@ void selectTime(int *minut, int *sec)
 
 {
 
-//Used by the getKey method
-int key            =-1;
-int oldkey         =-1;
-
 boolean selecting = true;
 int selectedTime[2] = {5,0}; 
+
+int key;
 
 boolean selection = false; //false for minutes, true for seconds
 
 while(selecting)
 
 {
-
+  lcd.clear(); 
   lcd.setCursor(0,0);
   if (selection == MINUTES_VALUE) {
     lcd.print("Select minutes:");}
   else {
     lcd.print("Select seconds:");}
   lcd.setCursor(0,1);
+  lcd.print("Time: ");
   lcd.print(selectedTime[0]);
   lcd.print(":");
   if (selectedTime[1] < 10) {
     lcd.print("0");}
   lcd.print(selectedTime[1]);
-
-   key = getKey(analogRead(0));
-   if (key != oldkey)   // if keypress is detected
-   {
-     delay(BOUNCE);  // wait for debounce time
-     key = getKey(analogRead(0));
-     if (key != oldkey)    
-     {          
-       //oldkey = key;
-       if (key >=0) //Procesing keys
-       {
-          switch(key) 
+  
+  delay(BOUNCE);  // wait for debounce time    
+  key = getKey(analogRead(0));
+  if (key >=0) //Procesing keys
+    {
+      switch(key) 
           {
-          
           case SELECT: //End
             selecting = false;
           break;
@@ -182,18 +182,87 @@ while(selecting)
           
           case RIGHT: 
           selection = SECONDS_VALUE; 
-          break;
-            
-          }              
+          break;           
        }
      }
    }
-   delay(100);
+  delay(100);
+  lcd.clear(); 
 
-  lcd.clear(); //Borra el display para dibujarlo otra vez.
-
-  }
   *minut = selectedTime[0];
   *sec = selectedTime[1];
 }
+
+boolean inputCode() {
+
+    //Used by the getKey method
+    int key            =-1;
+    int oldkey         =-1;
+    //Code inputed by the user
+    int inputCode[] = {0,0,0,0};
+    int currentDigit = -1;
+
+    boolean inputing = true;
+    
+    lcd.clear();
+    
+    boolean result = true;
+    while (inputing) {
+       lcd.setCursor(0,0);
+       lcd.print("Insert code:");
+       //Display current input code
+       for(int i = 0;i < 4;i++) {
+         lcd.print(inputCode[i]);
+       }    
+       key = getKey(analogRead(0));
+       if (key != oldkey)// if keypress is detected
+       {
+         delay(50);  // wait for debounce time
+         key = getKey(analogRead(0));
+         if (key != oldkey)    
+         {          
+           oldkey = key;
+           if (key >=0) //Procesing keys
+           {
+              switch(key) 
+              {
+              
+              case SELECT: //Confirm number
+              if (currentDigit >= 3) {
+                inputing = false;}
+              else {
+                currentDigit++;}
+              break;
+              
+              case UP:
+              inputCode[currentDigit]++;  
+              if (inputCode[currentDigit] > 9) {
+                inputCode[currentDigit] = 0;}
+              break;
+              
+              case DOWN: 
+              inputCode[currentDigit]--;   
+              if (inputCode[currentDigit] < 0) {
+                inputCode[currentDigit] = 9;}
+              break;
+              
+             }              
+           }
+         }
+       }
+       //Restart
+       delay(50);
+      }
+    lcd.setCursor(0,1);  
+    for (int i = 0;i < 4;i++) { //Verify code
+      if (code[i] != inputCode[i]) {
+        result = false;}}
+    if (result) {
+      lcd.print("Code correct");}
+    else {
+      lcd.print("Code incorrect");}
+    delay(1000);
+    lcd.clear();
+    return result;
+  }
 

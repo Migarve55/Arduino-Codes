@@ -1,39 +1,50 @@
 
 #include <Servo.h>
 
-Servo cerrojo;
+Servo lock;
 
-int verde = 8;
-int rojo = 7;
+int greenLEDpin = 8;
+int redLEDpin = 7;
 
-int boton = 4;
-int seguro = 12;
+int button = 4;
+int closedSensor = 12;
 
-boolean cerrado = false;
+int speakerPin = 9;
 
-int clave[] = {6, 3, 8, 0};
+boolean closed = false;
+int closedPosition = 90;
+int openedPosition = 0;
+
+int code[] = {6, 3, 8, 0};
+
+//Other variables
+int errorCounter = 0;
+int maxErrors = 3;
+
+int alarmDuration = 10000; //In milliseconds
 
 void setup()
 
 {
   
-  pinMode(verde, OUTPUT); //led verde
-  pinMode(rojo, OUTPUT); //led rojo
-  pinMode(boton, INPUT); //boton
+  pinMode(greenLEDpin, OUTPUT); //Green LED
+  pinMode(redLEDpin, OUTPUT);  //Red LED
+  pinMode(button, INPUT); //Button
   
   pinMode(A3, INPUT); // pot
   
-  pinMode(seguro, INPUT); //Seguro
+  pinMode(closedSensor, INPUT); //Safe
 
-  //Setup del servo
-  cerrojo.attach(5);  
+  //Serevo setup 
+  lock.attach(5);  
   
-  //Test del servo
-  cerrojo.write(0);
-  cerrojo.write(90);
-  cerrojo.write(0);
-  
-  testCerrar(); //Espara a que se cierre la puerta
+  //Servo test
+  lock.write(closedPosition);
+  lock.write(openedPosition);
+  lock.write(closedPosition);
+
+  //Wait to lock the door until you close it
+  testClose();
   
 }
 
@@ -41,45 +52,64 @@ void loop()
 
 {
 
-  testBotonAbrir(); //Comprueba si quieres abrir la puerta    
-  testCerrado(); //Comprueba si esta cerrado esta cerrado
-  
-}
+  init:
 
-void testCerrar()
-
-{
-  
-  while(digitalRead(seguro) != HIGH)
-  {
-  digitalWrite(verde, HIGH), digitalWrite(rojo, HIGH); //Ponen los dos leds encendidos, para indicar que se tiene que cerrar la puerta.
+ //Alarm checking
+  if (closed && digitalRead(closedSensor) == LOW) {
+    alarm();
+    goto init;
   }
-  
-  cerrojo.write(90); //Cierra la puerta
-  
-  digitalWrite(verde, LOW), digitalWrite(rojo, LOW); //Pone las luces en modo "Cerrado"
-  cerrado = true;
-  
+
+  //User wants to open the safebox
+  if (closed && digitalRead(button) == HIGH) {
+  boolean Running = true;
+    while (Running) {
+      if(checkCode()) {
+        digitalWrite(greenLEDpin, HIGH),delay(500), digitalWrite(greenLEDpin, LOW);
+        Running = false;} //Code was correct
+      else {
+        digitalWrite(redLEDpin, HIGH),delay(500), digitalWrite(redLEDpin, LOW);
+        errorCounter++;} //Code was incorrect
+      if (errorCounter >= maxErrors) { //Too many errors
+          alarm();
+          goto init;
+        }
+     }
+     //If the code was correct, open it
+     lock.write(openedPosition); //Open
+     delay(3000);
+     testClose(); //Close
+  }
 }
 
-void testCerrado()
-
-{  
- if (digitalRead(seguro) == LOW && cerrado == true) 
- {
-  //alarma
- }
-}
-
-void testBotonAbrir()
-
+void testClose()
 {
-
-if (digitalRead(boton) == HIGH)
- {
-
-   
-   
-   
- }
+  digitalWrite(greenLEDpin, HIGH), digitalWrite(redLEDpin, HIGH);
+  
+  while(digitalRead(closedSensor) != HIGH);
+  lock.write(closedPosition);
+  
+  digitalWrite(greenLEDpin, LOW), digitalWrite(redLEDpin, LOW); 
+  closed = true;
 }
+
+boolean checkCode() {
+    boolean result = true;
+    for (int i = 0;i < 4;i++) {
+        while(digitalRead(button) != HIGH);
+        if (code[i] != map(analogRead(A3),0,1023,0,9)) result = false;
+      }
+    return result;
+  }
+
+void alarm() {
+  int duration = 0;
+  while(alarmDuration > duration) {
+      digitalWrite(greenLEDpin, HIGH), digitalWrite(redLEDpin, LOW);
+      tone(speakerPin, 400, 100);
+      digitalWrite(greenLEDpin, LOW), digitalWrite(redLEDpin, HIGH);
+      tone(speakerPin, 800, 100);
+      duration += 200;
+    }
+  noTone(speakerPin); //Stop speaker
+  }

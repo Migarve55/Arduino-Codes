@@ -23,7 +23,7 @@ const int DOWN           = 3;
 const int LEFT           = 4;
 const int RIGHT          = 1;
 
-const int BOUNCE = 200;
+const int BOUNCE = 150;
 
 //Armed variable
 boolean armed = false;
@@ -75,7 +75,21 @@ void loop()
   updateTime();
 
   //Counter reaches 0:00
-  if(minutes == 0 && seconds <= 0){
+  checkTimer();
+  delay(1000); //Wait 1 seconds
+}
+
+void updateTime() {
+    //Blink led (pin 13), on board
+    digitalWrite(13,HIGH);
+    digitalWrite(13,LOW);
+    seconds--; //Updates time
+    if (seconds < 0) {minutes--;seconds = 59;}
+  }
+
+void checkTimer()
+{
+if(minutes == 0 && seconds <= 0){
      if (armed) {  
        lcd.clear();
        lcd.setCursor(0,0);
@@ -90,13 +104,6 @@ void loop()
      }
   }
 }
-
-void updateTime() {
-    seconds--; //Updates time
-    if (seconds < 0) {minutes--;seconds = 59;}
-    delay(1000); //Wais 1 seconds
-  }
-
  /**
  * Gets the key 
  */
@@ -203,17 +210,24 @@ boolean inputCode() {
     int currentDigit = -1;
 
     boolean inputing = true;
+
+    int t; //Used to measure time
     
     lcd.clear();
     
     boolean result = true;
     while (inputing) {
+       int t0 = millis();
+       lcd.clear();
        lcd.setCursor(0,0);
        lcd.print("Insert code:");
        //Display current input code
        for(int i = 0;i < 4;i++) {
          lcd.print(inputCode[i]);
        }    
+       //Print cursor
+       lcd.setCursor(currentDigit+12,1);
+       lcd.print('^');
        key = getKey(analogRead(0));
        if (key != oldkey)// if keypress is detected
        {
@@ -228,10 +242,8 @@ boolean inputCode() {
               {
               
               case SELECT: //Confirm number
-              if (currentDigit >= 3) {
+              if (currentDigit == 3) {
                 inputing = false;}
-              else {
-                currentDigit++;}
               break;
               
               case UP:
@@ -245,6 +257,18 @@ boolean inputCode() {
               if (inputCode[currentDigit] < 0) {
                 inputCode[currentDigit] = 9;}
               break;
+
+              case LEFT:  
+              currentDigit--;
+              if (currentDigit < 0) {
+                currentDigit = 3;}
+              break;
+              
+              case RIGHT: 
+              currentDigit++;
+              if (currentDigit > 3) {
+                currentDigit = 0;}
+              break;     
               
              }              
            }
@@ -252,15 +276,21 @@ boolean inputCode() {
        }
        //Restart
        delay(50);
+       t += millis() - t0;
+       if(t > 1000) {
+        updateTime();
+        t = 0;
+        }
+       checkTimer();
       }
     lcd.setCursor(0,1);  
     for (int i = 0;i < 4;i++) { //Verify code
       if (code[i] != inputCode[i]) {
         result = false;}}
     if (result) {
-      lcd.print("Code correct");}
+      lcd.print("Code correct    ");}
     else {
-      lcd.print("Code incorrect");}
+      lcd.print("Code incorrect  ");}
     delay(1000);
     lcd.clear();
     return result;

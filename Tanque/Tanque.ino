@@ -67,7 +67,7 @@ void setupBlueToothConnection()
 {
  BT.begin(38400); //Set BluetoothBee BaudRate to default baud rate 38400
  BT.print("\r\n+STWMOD=0\r\n"); //set the bluetooth work in slave mode
- BT.print("\r\n+STNA=RCarduino\r\n"); //set the bluetooth name as "SeeedBTSlave"
+ BT.print("\r\n+STNA=RCarduino\r\n"); //set the bluetooth name as "RCarduino"
  BT.print("\r\n+STOAUT=1\r\n"); // Permit Paired device to connect me
  BT.print("\r\n+STAUTO=0\r\n"); // Auto-connection should be forbidden here
  delay(2000); // This delay is required.

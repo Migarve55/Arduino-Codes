@@ -5,25 +5,25 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 int minutes = 5;
 int seconds = 0;
 
-const boolean MINUTES_VALUE = false;
-const boolean SECONDS_VALUE = true;
+#define MINUTES_VALUE  false
+#define SECONDS_VALUE  true
 
-const int MAX_MINUTES = 30;
+#define MAX_MINUTES  30
 
 //Pins
-int loadPin = 2; //Pin to attach the fuse
+#define loadPin  2 //Pin to attach the fuse
 
 //Buttons variables
 int adc_key_val[5] = {50, 200, 400, 600, 800 };
 int NUM_KEYS       = 5;  
 //Button keys
-const int SELECT         = 5;
-const int UP             = 2;
-const int DOWN           = 3;
-const int LEFT           = 4;
-const int RIGHT          = 1;
+#define  SELECT          5
+#define  UP              2
+#define  DOWN            3
+#define  LEFT            4
+#define  RIGHT           1
 
-const int BOUNCE = 150;
+#define  BOUNCE  150
 
 //Armed variable
 boolean armed = false;
@@ -47,6 +47,7 @@ void setup()
 
   //Select time
   selectTime(&minutes,&seconds);
+  delay(500);
 }
 
 void loop() 
@@ -54,9 +55,9 @@ void loop()
 
   lcd.clear();
   
-  if (getKey(analogRead(0)) == SELECT) {
-    if(inputCode()) {
-      armed = !armed;}}
+  if (getKey(analogRead(0)) == SELECT) 
+    if(inputCode()) 
+      armed = !armed;
     
   lcd.setCursor(0,0);
   if (armed)
@@ -82,6 +83,7 @@ void loop()
 void updateTime() {
     //Blink led (pin 13), on board
     digitalWrite(13,HIGH);
+    delay(10);
     digitalWrite(13,LOW);
     seconds--; //Updates time
     if (seconds < 0) {minutes--;seconds = 59;}
@@ -130,7 +132,7 @@ int selectedTime[2] = {5,0};
 
 int key;
 
-boolean selection = false; //false for minutes, true for seconds
+boolean selection = MINUTES_VALUE; 
 
 while(selecting)
 
@@ -242,8 +244,8 @@ boolean inputCode() {
               {
               
               case SELECT: //Confirm number
-              if (currentDigit == 3) {
-                inputing = false;}
+                if(currentDigit == 3)
+                  inputing = false;
               break;
               
               case UP:
